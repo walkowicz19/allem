@@ -180,9 +180,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn definitions_lists_three_tools() {
+    fn definitions_list_all_tools() {
         let defs = definitions();
-        assert_eq!(defs.as_array().unwrap().len(), 3);
+        let names: Vec<&str> = defs
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|t| t["name"].as_str().unwrap())
+            .collect();
+        assert_eq!(
+            names,
+            [
+                "analyze_repo",
+                "list_dependency_risks",
+                "explain_finding",
+                "confirm_finding",
+                "apply_fix",
+            ]
+        );
     }
 
     #[test]
