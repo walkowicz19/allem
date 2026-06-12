@@ -1,0 +1,16 @@
+[package]
+name = "allem-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Core data model and engine contracts for Allem — polyglot codebase & dependency intelligence."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

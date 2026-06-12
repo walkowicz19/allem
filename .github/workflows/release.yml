@@ -1,0 +1,72 @@
+name: release
+
+# Tag a release (e.g. `git tag v0.1.0 && git push --tags`) to build per-platform binaries,
+# attach them to the GitHub Release, and publish the `allem` npm wrapper that downloads them.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            asset: allem-linux-x64.gz
+            bin: allem
+          - os: macos-13
+            target: x86_64-apple-darwin
+            asset: allem-darwin-x64.gz
+            bin: allem
+          - os: macos-14
+            target: aarch64-apple-darwin
+            asset: allem-darwin-arm64.gz
+            bin: allem
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            asset: allem-win32-x64.exe.gz
+            bin: allem.exe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }} -p allem-cli
+      - name: Compress binary
+        shell: bash
+        run: gzip -c "target/${{ matrix.target }}/release/${{ matrix.bin }}" > "${{ matrix.asset }}"
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset }}
+
+  publish-npm:
+    name: publish npm wrapper
+    needs: build
+    runs-on: ubuntu-latest
+    # Only runs once an NPM_TOKEN secret is configured; the release/binaries don't depend on it.
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+      - name: Set version to tag and publish
+        if: ${{ env.NPM_TOKEN != '' }}
+        working-directory: npm
+        run: |
+          npm pkg set version="${GITHUB_REF_NAME#v}"
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,16 @@
+[package]
+name = "allem-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Allem orchestrator — combines code and dependency intelligence into one report."
+
+[dependencies]
+allem-core = { workspace = true }
+allem-deps = { workspace = true }
+allem-lang = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,17 @@
+[package]
+name = "allem-mcp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "MCP server for Allem — exposes the deterministic engine as structured truth to agents."
+
+[dependencies]
+allem-core = { workspace = true }
+allem-engine = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

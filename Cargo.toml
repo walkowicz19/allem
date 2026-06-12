@@ -1,0 +1,40 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/allem-core",
+    "crates/allem-lang",
+    "crates/allem-deps",
+    "crates/allem-engine",
+    "crates/allem-mcp",
+    "crates/allem-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/walkowicz19/allem"
+rust-version = "1.80"
+
+[workspace.dependencies]
+allem-core = { path = "crates/allem-core" }
+allem-lang = { path = "crates/allem-lang" }
+allem-deps = { path = "crates/allem-deps" }
+allem-engine = { path = "crates/allem-engine" }
+allem-mcp = { path = "crates/allem-mcp" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+toml = "0.8"
+toml_edit = "0.22"
+ureq = { version = "2", features = ["json"] }
+semver = "1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"

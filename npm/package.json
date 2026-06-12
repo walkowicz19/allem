@@ -1,0 +1,31 @@
+{
+  "name": "allem",
+  "version": "0.1.0",
+  "description": "Polyglot codebase & dependency intelligence — run with `npx allem`. Downloads a small prebuilt binary for your platform.",
+  "bin": {
+    "allem": "bin/allem.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/download.js"
+  },
+  "files": [
+    "bin/",
+    "scripts/"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "keywords": [
+    "static-analysis",
+    "dependencies",
+    "security",
+    "polyglot",
+    "mcp",
+    "cli"
+  ],
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/walkowicz19/allem"
+  }
+}

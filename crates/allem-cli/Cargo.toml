@@ -1,0 +1,23 @@
+[package]
+name = "allem-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Allem CLI — polyglot codebase & dependency intelligence in a single command."
+
+[[bin]]
+name = "allem"
+path = "src/main.rs"
+
+[dependencies]
+allem-core = { workspace = true }
+allem-engine = { workspace = true }
+allem-mcp = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+
+[lints]
+workspace = true

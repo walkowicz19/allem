@@ -1,0 +1,16 @@
+# Rust build output
+/target/
+
+# npm wrapper: downloaded binary cache
+npm/vendor/
+npm/node_modules/
+
+# Allem runtime state and local demo fixtures
+.allem/
+.demo-*/
+
+# Release assets built locally
+allem-*.gz
+
+# Machine-local Claude Code settings
+.claude/settings.local.json
