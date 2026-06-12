@@ -31,7 +31,7 @@ npx allem analyze .
 ```
 
 On first run this downloads a small prebuilt binary for your platform (Linux x64, macOS
-x64/arm64, Windows x64) and caches it; later runs are instant. Just like `npx`, you can run any
+x64/arm64, Windows x64) and caches it; later runs are instant. You can run any
 command this way — `npx allem audit .`, `npx allem mcp`, etc.
 
 ### Other ways to install
