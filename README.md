@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/allem-logo.svg" alt="Allem" width="380">
+</p>
+
 # Allem
 
 **Polyglot codebase & dependency intelligence — one command, and an MCP server.**
