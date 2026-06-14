@@ -40,6 +40,8 @@ pub enum Category {
     Duplication,
     Complexity,
     Boundary,
+    /// A syntax/parse error detected while parsing a source file.
+    ParseError,
     /// A dangerous-call sink in first-party source (eval/exec/command execution, etc.).
     CodeInjection,
     DependencyHygiene,

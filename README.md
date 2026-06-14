@@ -17,7 +17,8 @@ It is **inspired by [`fallow`](https://github.com/fallow-rs/fallow)** — see [C
   [OSV.dev](https://osv.dev)), **dangerous** (unpinned wildcards, untrusted VCS/URL sources,
   typosquats), and **injection** (install-script markers).
 - **Code intelligence** — cyclomatic complexity, long functions, AST-level **injection sinks**,
-  and **cross-file dead code**.
+  **cross-file dead code**, **cross-file duplication** (copy-paste, comment-insensitive), and
+  **syntax/parse errors**.
 - **Triage-first** — verdicts persist in `.allem/triage.json`; false positives are excluded from
   CI gating; `fix` applies a **bounded, single-finding** change only.
 - **Single binary** — one install command, zero toolchain. Also an **MCP server**.

@@ -14,3 +14,6 @@ allem-*.gz
 
 # Machine-local Claude Code settings
 .claude/settings.local.json
+
+# Unrelated local artifacts
+klayer_train.db*

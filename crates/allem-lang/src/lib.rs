@@ -9,6 +9,7 @@
 mod analysis;
 pub mod cobol;
 pub mod deadcode;
+pub mod duplication;
 mod specs;
 mod walk;
 
@@ -120,8 +121,9 @@ pub fn analyze_tree(root: &Path) -> Result<LangReport> {
         findings.extend(adapter.analyze_file(&path, &source)?);
     }
 
-    // Cross-file dead code needs the whole corpus, so it runs as its own pass.
+    // Cross-file dead code and duplication need the whole corpus, so they run as their own passes.
     findings.extend(deadcode::analyze(root));
+    findings.extend(duplication::analyze(root));
 
     Ok(LangReport {
         languages,
@@ -177,6 +179,24 @@ mod tests {
         let a = python();
         assert!(a.matches(Path::new("svc.py")));
         assert!(!a.matches(Path::new("svc.rs")));
+    }
+
+    #[test]
+    fn syntax_error_is_flagged() {
+        let src = "def broken(:\n    x = (1 +\n    return x\n";
+        let findings = python().analyze_file(Path::new("broken.py"), src).unwrap();
+        assert!(
+            findings.iter().any(|f| f.category == Category::ParseError),
+            "expected a parse_error finding"
+        );
+    }
+
+    #[test]
+    fn valid_file_has_no_parse_error() {
+        let findings = python()
+            .analyze_file(Path::new("ok.py"), "def f(x):\n    return x + 1\n")
+            .unwrap();
+        assert!(!findings.iter().any(|f| f.category == Category::ParseError));
     }
 
     #[test]

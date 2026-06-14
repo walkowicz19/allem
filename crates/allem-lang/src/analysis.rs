@@ -46,15 +46,62 @@ pub fn analyze(
     };
 
     let mut findings = Vec::new();
-    visit(
-        spec,
-        tree.root_node(),
-        source,
-        path,
-        thresholds,
-        &mut findings,
-    );
+    let root = tree.root_node();
+    if root.has_error() {
+        if let Some(f) = parse_error(spec, root, path) {
+            findings.push(f);
+        }
+    }
+    visit(spec, root, source, path, thresholds, &mut findings);
     Ok(findings)
+}
+
+/// Emit a single `parse_error` finding at the first ERROR/MISSING node in the tree, if any.
+/// One per file keeps it actionable rather than flooding on a single broken construct.
+fn parse_error(spec: &LangSpec, root: Node, path: &Path) -> Option<Finding> {
+    let node = first_error(root)?;
+    let line = node.start_position().row as u32 + 1;
+    let kind = if node.is_missing() {
+        "missing"
+    } else {
+        "unexpected"
+    };
+    Some(
+        Finding::new(
+            format!("parse-error/{}/{}:{}", spec.id, path.display(), line),
+            Category::ParseError,
+            Severity::Medium,
+            format!(
+                "syntax error in {} ({kind} syntax near line {line})",
+                spec.id
+            ),
+        )
+        .with_location(Location {
+            path: path.to_path_buf(),
+            line: Some(line),
+            column: None,
+        })
+        .with_evidence("language", spec.id.into())
+        .with_action(SuggestedAction {
+            action_type: "review".into(),
+            to: None,
+            confidence: Confidence::High,
+        }),
+    )
+}
+
+/// First ERROR/MISSING node in DFS pre-order (≈ source order).
+fn first_error(node: Node) -> Option<Node> {
+    if node.is_error() || node.is_missing() {
+        return Some(node);
+    }
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        if let Some(found) = first_error(child) {
+            return Some(found);
+        }
+    }
+    None
 }
 
 /// Depth-first walk: at each node, run complexity (on functions) and injection-sink (on calls)
