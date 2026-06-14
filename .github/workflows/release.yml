@@ -22,7 +22,10 @@ jobs:
             target: x86_64-unknown-linux-gnu
             asset: allem-linux-x64.gz
             bin: allem
-          - os: macos-13
+          # Cross-compile the Intel-Mac binary on the Apple-Silicon runner: macos-13 (Intel)
+          # runners are scarce and frequently queue for a long time, whereas macos-14 is plentiful
+          # and its Apple toolchain targets x86_64 fine.
+          - os: macos-14
             target: x86_64-apple-darwin
             asset: allem-darwin-x64.gz
             bin: allem

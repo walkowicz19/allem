@@ -201,4 +201,4 @@ episodic memory. The conventions it enforces here:
 
 ## License
 
-MIT OR Apache-2.0
+Licensed under the [MIT License](LICENSE).
