@@ -11,8 +11,10 @@ It is **inspired by [`fallow`](https://github.com/fallow-rs/fallow)** — see [C
 
 ## Highlights
 
-- **Polyglot** — Python, Rust, Go, Ruby, Java, JavaScript, TypeScript, C, C++, C#, PHP, Bash
-  (tree-sitter), plus a bespoke **COBOL** adapter. Adding a language is one `LangSpec`.
+- **Polyglot (15 languages)** — Python, Rust, Go, Ruby, Java, JavaScript, TypeScript, C, C++,
+  C#, PHP, Bash (tree-sitter), plus bespoke adapters for the legacy stack: **COBOL**, **SQL**,
+  and **NATURAL**. Adding a tree-sitter language is one `LangSpec`. See
+  [Language support](#language-support).
 - **Dependency safety** — **outdated** (PyPI / crates.io registries), **vulnerable** (live
   [OSV.dev](https://osv.dev)), **dangerous** (unpinned wildcards, untrusted VCS/URL sources,
   typosquats), and **injection** (install-script markers).
@@ -111,6 +113,43 @@ automatically). It uses `npx`, so there's nothing to install:
 For **Claude Desktop**, add the same `mcpServers` block to `claude_desktop_config.json`. If you
 installed the native binary instead, use `"command": "allem", "args": ["mcp"]` (with an absolute
 path if it isn't on `PATH`).
+
+## Language support
+
+| Language | Extensions | Backend | Analyses |
+| --- | --- | --- | --- |
+| Python | `.py` `.pyi` | tree-sitter | complexity, sinks, dead code, duplication, parse errors |
+| Rust | `.rs` | tree-sitter | complexity, sinks, dead code, duplication, parse errors |
+| Go | `.go` | tree-sitter | complexity, sinks, dead code, duplication, parse errors |
+| Ruby | `.rb` | tree-sitter | complexity, sinks, dead code, duplication, parse errors |
+| Java | `.java` | tree-sitter | complexity, sinks, dead code, duplication, parse errors |
+| JavaScript | `.js` `.jsx` `.mjs` `.cjs` | tree-sitter | complexity, sinks, dead code, duplication, parse errors |
+| TypeScript | `.ts` `.tsx` `.mts` `.cts` | tree-sitter | complexity, sinks, dead code, duplication, parse errors |
+| C | `.c` `.h` | tree-sitter | complexity, sinks, duplication, parse errors |
+| C++ | `.cpp` `.cc` `.cxx` `.hpp` `.hh` | tree-sitter | complexity, sinks, duplication, parse errors |
+| C# | `.cs` | tree-sitter | complexity, sinks, dead code, duplication, parse errors |
+| PHP | `.php` | tree-sitter | complexity, sinks, dead code, duplication, parse errors |
+| Bash | `.sh` `.bash` | tree-sitter | complexity, sinks, dead code, duplication, parse errors |
+| COBOL | `.cob` `.cbl` `.cpy` `.cobol` | bespoke | paragraph complexity |
+| SQL | `.sql` | bespoke | routine complexity, dynamic-SQL/command sinks |
+| NATURAL | `.nsp` `.nsn` `.nss` `.nat` | bespoke | subroutine/program complexity |
+
+Dependency analysis is separate and keyed off manifests (`requirements.txt` for PyPI,
+`Cargo.toml` for crates.io).
+
+### Planned languages
+
+Allem leans into hard-to-tool, legacy-heavy stacks. Candidates on the roadmap (bespoke adapters
+where no tree-sitter grammar exists):
+
+- **PowerScript** (PowerBuilder), **ABAP** (SAP), **RPG** / **RPGLE** (IBM i), **PL/I**,
+  **PL/SQL** & **T-SQL** dialect awareness, **JCL**, **REXX**, **Assembler** (HLASM).
+- **Progress / OpenEdge ABL**, **Clipper / dBASE / FoxPro (xBase)**, **MUMPS / Caché ObjectScript**,
+  **Visual Basic 6 / VBA**, **Delphi / Object Pascal**, **Fortran (77/90)**, **Ada**, **Tcl**.
+- Modern gaps: **Kotlin**, **Swift**, **Scala**, **Elixir**, **Lua**, **Perl**, **R**, **Dart**.
+
+Want one prioritized? Open an issue — a tree-sitter language is one `LangSpec`; a bespoke one
+follows the COBOL/SQL/NATURAL pattern.
 
 ## Workspace
 

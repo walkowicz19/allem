@@ -10,7 +10,9 @@ mod analysis;
 pub mod cobol;
 pub mod deadcode;
 pub mod duplication;
+pub mod natural;
 mod specs;
+pub mod sql;
 mod walk;
 
 use allem_core::{Finding, LanguageAdapter, Result};
@@ -91,6 +93,8 @@ pub fn adapters() -> Vec<Box<dyn LanguageAdapter>> {
         })
         .collect();
     adapters.push(Box::new(cobol::CobolAdapter::default()));
+    adapters.push(Box::new(sql::SqlAdapter::default()));
+    adapters.push(Box::new(natural::NaturalAdapter::default()));
     adapters
 }
 
@@ -158,6 +162,8 @@ mod tests {
             "php",
             "bash",
             "cobol",
+            "sql",
+            "natural",
         ] {
             assert!(ids.contains(&lang), "missing adapter: {lang}");
         }
