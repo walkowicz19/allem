@@ -145,6 +145,24 @@ fn run() -> anyhow::Result<ExitCode> {
             Ok(ExitCode::SUCCESS)
         }
         Command::Mcp => {
+            // `allem mcp` is a stdio JSON-RPC server, not an interactive command. When run by
+            // hand in a terminal it would just block on stdin forever (looks like a hang/crash),
+            // so detect a TTY and print setup guidance instead. MCP clients pipe stdin (not a
+            // TTY), so they serve normally.
+            use std::io::IsTerminal;
+            if std::io::stdin().is_terminal() {
+                eprintln!("allem mcp is a stdio MCP server — your MCP client launches it; you don't run it by hand.");
+                eprintln!();
+                eprintln!(
+                    "Add this to your MCP config (e.g. .mcp.json or claude_desktop_config.json):"
+                );
+                eprintln!(
+                    "  {{\"mcpServers\":{{\"allem\":{{\"command\":\"npx\",\"args\":[\"-y\",\"allem\",\"mcp\"]}}}}}}"
+                );
+                eprintln!();
+                eprintln!("For a one-off CLI report instead, run: allem analyze .");
+                return Ok(ExitCode::SUCCESS);
+            }
             allem_mcp::serve_stdio().context("MCP server")?;
             Ok(ExitCode::SUCCESS)
         }

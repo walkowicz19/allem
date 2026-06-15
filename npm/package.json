@@ -1,6 +1,6 @@
 {
   "name": "allem",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Polyglot codebase & dependency intelligence — run with `npx allem`. Downloads a small prebuilt binary for your platform.",
   "bin": {
     "allem": "bin/allem.js"

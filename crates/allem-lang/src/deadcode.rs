@@ -57,10 +57,12 @@ pub fn analyze_sources(sources: impl IntoIterator<Item = (PathBuf, String)>) -> 
         let Some(tree) = parser.parse(source.as_bytes(), None) else {
             continue;
         };
+        let lines: Vec<&str> = source.lines().collect();
         collect(
             spec,
             tree.root_node(),
             &source,
+            &lines,
             &path,
             &mut counts,
             &mut defs,
@@ -108,10 +110,12 @@ fn matches_ext(spec: &LangSpec, path: &Path) -> bool {
 }
 
 /// Single recursive walk that both counts identifier occurrences and records definitions.
+#[allow(clippy::too_many_arguments)]
 fn collect(
     spec: &LangSpec,
     node: Node,
     source: &str,
+    lines: &[&str],
     path: &Path,
     counts: &mut HashMap<String, u32>,
     defs: &mut Vec<Def>,
@@ -132,19 +136,42 @@ fn collect(
             .and_then(|f| node.child_by_field_name(f))
             .and_then(|n| n.utf8_text(source.as_bytes()).ok())
         {
-            defs.push(Def {
-                name: name.to_string(),
-                lang: spec.id,
-                file: path.to_path_buf(),
-                line: node.start_position().row as u32 + 1,
-            });
+            let row = node.start_position().row;
+            // Test functions are invoked by the test harness, not referenced by name — skip
+            // them so dead-code doesn't flag every `#[test]`/`@Test`/`test_*`.
+            if !is_test_definition(spec.id, name, lines, row) {
+                defs.push(Def {
+                    name: name.to_string(),
+                    lang: spec.id,
+                    file: path.to_path_buf(),
+                    line: row as u32 + 1,
+                });
+            }
         }
     }
 
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        collect(spec, child, source, path, counts, defs, depth + 1);
+        collect(spec, child, source, lines, path, counts, defs, depth + 1);
     }
+}
+
+/// Heuristic: is this definition a test? Covers `#[test]`/`#[tokio::test]`/`#[cfg(test)]` (Rust),
+/// `@Test` (Java/etc.) on a nearby preceding line, and pytest's `test_*` naming (Python).
+fn is_test_definition(lang: &str, name: &str, lines: &[&str], row: usize) -> bool {
+    if (lang == "python" || lang == "ruby") && name.starts_with("test_") {
+        return true;
+    }
+    // Scan up to 3 lines immediately above the definition for a test attribute/annotation.
+    let start = row.saturating_sub(3);
+    for line in lines.iter().take(row).skip(start) {
+        let t = line.trim();
+        let lower = t.to_ascii_lowercase();
+        if (t.starts_with("#[") && lower.contains("test")) || t.contains("@Test") {
+            return true;
+        }
+    }
+    false
 }
 
 /// Leaf identifier-like node kinds across grammars (`identifier`, `field_identifier`, …).
