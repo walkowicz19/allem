@@ -156,6 +156,7 @@ mod tests {
             "java",
             "javascript",
             "typescript",
+            "tsx",
             "c",
             "cpp",
             "csharp",
@@ -203,6 +204,29 @@ mod tests {
             .analyze_file(Path::new("ok.py"), "def f(x):\n    return x + 1\n")
             .unwrap();
         assert!(!findings.iter().any(|f| f.category == Category::ParseError));
+    }
+
+    #[test]
+    fn tsx_jsx_parses_without_error() {
+        let tsx = adapters().into_iter().find(|a| a.id() == "tsx").unwrap();
+        let src = "import { StrictMode } from \"react\";\nimport { createRoot } from \"react-dom/client\";\nimport App from \"./App\";\n\ncreateRoot(document.getElementById(\"root\")!).render(\n  <StrictMode>\n    <App />\n  </StrictMode>\n);\n";
+        let findings = tsx.analyze_file(Path::new("main.tsx"), src).unwrap();
+        assert!(
+            !findings.iter().any(|f| f.category == Category::ParseError),
+            "TSX/JSX must not produce a parse error: {findings:?}"
+        );
+    }
+
+    #[test]
+    fn deeply_nested_input_does_not_overflow_stack() {
+        // ~20k-deep nesting (minified/generated style) must be handled without crashing.
+        let src = format!("const x = {}1{};\n", "(".repeat(20000), ")".repeat(20000));
+        let js = adapters()
+            .into_iter()
+            .find(|a| a.id() == "javascript")
+            .unwrap();
+        // The depth guard caps recursion; this returns rather than overflowing the stack.
+        let _ = js.analyze_file(Path::new("deep.js"), &src).unwrap();
     }
 
     #[test]

@@ -9,6 +9,10 @@ use allem_core::{
 use std::path::Path;
 use tree_sitter::{Language, Node, Parser};
 
+/// Maximum tree depth we recurse into. Real source nests far shallower than this; the cap stops
+/// pathological inputs (deeply nested minified/generated code) from overflowing the stack.
+const MAX_DEPTH: usize = 1000;
+
 /// Tunable limits above which a function is reported.
 #[derive(Clone)]
 pub struct ComplexityThresholds {
@@ -52,14 +56,14 @@ pub fn analyze(
             findings.push(f);
         }
     }
-    visit(spec, root, source, path, thresholds, &mut findings);
+    visit(spec, root, source, path, thresholds, &mut findings, 0);
     Ok(findings)
 }
 
 /// Emit a single `parse_error` finding at the first ERROR/MISSING node in the tree, if any.
 /// One per file keeps it actionable rather than flooding on a single broken construct.
 fn parse_error(spec: &LangSpec, root: Node, path: &Path) -> Option<Finding> {
-    let node = first_error(root)?;
+    let node = first_error(root, 0)?;
     let line = node.start_position().row as u32 + 1;
     let kind = if node.is_missing() {
         "missing"
@@ -91,13 +95,16 @@ fn parse_error(spec: &LangSpec, root: Node, path: &Path) -> Option<Finding> {
 }
 
 /// First ERROR/MISSING node in DFS pre-order (≈ source order).
-fn first_error(node: Node) -> Option<Node> {
+fn first_error(node: Node, depth: usize) -> Option<Node> {
+    if depth > MAX_DEPTH {
+        return None;
+    }
     if node.is_error() || node.is_missing() {
         return Some(node);
     }
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if let Some(found) = first_error(child) {
+        if let Some(found) = first_error(child, depth + 1) {
             return Some(found);
         }
     }
@@ -113,7 +120,11 @@ fn visit(
     path: &Path,
     thresholds: &ComplexityThresholds,
     out: &mut Vec<Finding>,
+    depth: usize,
 ) {
+    if depth > MAX_DEPTH {
+        return;
+    }
     if spec.function_kinds.contains(&node.kind()) {
         if let Some(f) = measure_function(spec, node, source, path, thresholds) {
             out.extend(f);
@@ -126,7 +137,7 @@ fn visit(
     }
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        visit(spec, child, source, path, thresholds, out);
+        visit(spec, child, source, path, thresholds, out, depth + 1);
     }
 }
 
@@ -193,7 +204,7 @@ fn measure_function(
 
     let line = node.start_position().row as u32 + 1;
     let lines = (node.end_position().row - node.start_position().row) as u32 + 1;
-    let complexity = 1 + count_decisions(spec, node);
+    let complexity = 1 + count_decisions(spec, node, 0);
 
     let mut findings = Vec::new();
     let location = || Location {
@@ -258,14 +269,17 @@ fn measure_function(
 }
 
 /// Count decision-point nodes anywhere inside `node` (its own kind excluded).
-fn count_decisions(spec: &LangSpec, node: Node) -> u32 {
+fn count_decisions(spec: &LangSpec, node: Node, depth: usize) -> u32 {
+    if depth > MAX_DEPTH {
+        return 0;
+    }
     let mut count = 0;
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if spec.decision_kinds.contains(&child.kind()) {
             count += 1;
         }
-        count += count_decisions(spec, child);
+        count += count_decisions(spec, child, depth + 1);
     }
     count
 }

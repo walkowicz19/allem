@@ -156,31 +156,50 @@ const JAVASCRIPT: LangSpec = LangSpec {
     sinks: &["eval", "exec", "execSync", "spawn"],
 };
 
+// TypeScript and TSX use *different* tree-sitter grammars — the TS grammar cannot parse JSX,
+// so `.tsx` must use LANGUAGE_TSX. The node kinds are otherwise identical, so they share one set.
+const TS_FUNCTION_KINDS: &[&str] = &[
+    "function_declaration",
+    "function_expression",
+    "arrow_function",
+    "method_definition",
+    "generator_function_declaration",
+];
+const TS_DECISION_KINDS: &[&str] = &[
+    "if_statement",
+    "for_statement",
+    "for_in_statement",
+    "while_statement",
+    "do_statement",
+    "switch_case",
+    "catch_clause",
+    "ternary_expression",
+];
+const TS_DEFINITION_KINDS: &[&str] = &["function_declaration", "class_declaration"];
+const TS_SINKS: &[&str] = &["eval", "exec", "execSync", "spawn"];
+
 const TYPESCRIPT: LangSpec = LangSpec {
     id: "typescript",
-    extensions: &["ts", "tsx", "mts", "cts"],
-    function_kinds: &[
-        "function_declaration",
-        "function_expression",
-        "arrow_function",
-        "method_definition",
-        "generator_function_declaration",
-    ],
+    extensions: &["ts", "mts", "cts"],
+    function_kinds: TS_FUNCTION_KINDS,
     name_field: Some("name"),
-    decision_kinds: &[
-        "if_statement",
-        "for_statement",
-        "for_in_statement",
-        "while_statement",
-        "do_statement",
-        "switch_case",
-        "catch_clause",
-        "ternary_expression",
-    ],
-    definition_kinds: &["function_declaration", "class_declaration"],
+    decision_kinds: TS_DECISION_KINDS,
+    definition_kinds: TS_DEFINITION_KINDS,
     call_kinds: &["call_expression"],
     callee_field: Some("function"),
-    sinks: &["eval", "exec", "execSync", "spawn"],
+    sinks: TS_SINKS,
+};
+
+const TSX: LangSpec = LangSpec {
+    id: "tsx",
+    extensions: &["tsx"],
+    function_kinds: TS_FUNCTION_KINDS,
+    name_field: Some("name"),
+    decision_kinds: TS_DECISION_KINDS,
+    definition_kinds: TS_DEFINITION_KINDS,
+    call_kinds: &["call_expression"],
+    callee_field: Some("function"),
+    sinks: TS_SINKS,
 };
 
 const C: LangSpec = LangSpec {
@@ -313,6 +332,7 @@ pub fn all() -> Vec<(LangSpec, Language)> {
             TYPESCRIPT,
             tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
         ),
+        (TSX, tree_sitter_typescript::LANGUAGE_TSX.into()),
         (C, tree_sitter_c::LANGUAGE.into()),
         (CPP, tree_sitter_cpp::LANGUAGE.into()),
         (CSHARP, tree_sitter_c_sharp::LANGUAGE.into()),

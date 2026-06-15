@@ -22,6 +22,9 @@ const IGNORE: &[&str] = &[
     "hashCode", "equals",
 ];
 
+/// Recursion cap — stops deeply nested (minified/generated) trees from overflowing the stack.
+const MAX_DEPTH: usize = 1000;
+
 struct Def {
     name: String,
     lang: &'static str,
@@ -61,6 +64,7 @@ pub fn analyze_sources(sources: impl IntoIterator<Item = (PathBuf, String)>) -> 
             &path,
             &mut counts,
             &mut defs,
+            0,
         );
     }
 
@@ -111,7 +115,11 @@ fn collect(
     path: &Path,
     counts: &mut HashMap<String, u32>,
     defs: &mut Vec<Def>,
+    depth: usize,
 ) {
+    if depth > MAX_DEPTH {
+        return;
+    }
     if is_identifier_kind(node.kind()) {
         if let Ok(text) = node.utf8_text(source.as_bytes()) {
             *counts.entry(text.to_string()).or_insert(0) += 1;
@@ -135,7 +143,7 @@ fn collect(
 
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        collect(spec, child, source, path, counts, defs);
+        collect(spec, child, source, path, counts, defs, depth + 1);
     }
 }
 

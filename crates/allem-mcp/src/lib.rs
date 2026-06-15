@@ -66,7 +66,13 @@ fn tools_call(id: Value, req: &Value) -> Value {
         .cloned()
         .unwrap_or_else(|| json!({}));
 
-    match tools::call(name, &args) {
+    // Run the tool inside catch_unwind so a panic in analysis returns an error result instead of
+    // killing the whole server (one bad repo/file must not take down the session).
+    let outcome =
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| tools::call(name, &args)))
+            .unwrap_or_else(|_| Err(format!("internal error: tool '{name}' panicked")));
+
+    match outcome {
         Ok(payload) => {
             let text = serde_json::to_string_pretty(&payload)
                 .unwrap_or_else(|_| "<unserializable>".to_string());

@@ -20,6 +20,8 @@ use tree_sitter::{Node, Parser};
 const MIN_LINES: u32 = 3;
 /// Minimum normalized token count (skips tiny bodies that collide trivially).
 const MIN_TOKENS: usize = 20;
+/// Recursion cap — stops deeply nested (minified/generated) trees from overflowing the stack.
+const MAX_DEPTH: usize = 1000;
 
 struct Clone {
     file: PathBuf,
@@ -52,7 +54,7 @@ pub fn analyze_sources(sources: impl IntoIterator<Item = (PathBuf, String)>) -> 
         let Some(tree) = parser.parse(source.as_bytes(), None) else {
             continue;
         };
-        collect_functions(spec, tree.root_node(), &source, &path, &mut groups);
+        collect_functions(spec, tree.root_node(), &source, &path, &mut groups, 0);
     }
 
     let mut findings: Vec<Finding> = groups
@@ -109,12 +111,16 @@ fn collect_functions(
     source: &str,
     path: &Path,
     groups: &mut HashMap<u64, Vec<Clone>>,
+    depth: usize,
 ) {
+    if depth > MAX_DEPTH {
+        return;
+    }
     if spec.function_kinds.contains(&node.kind()) {
         let lines = node.end_position().row as u32 - node.start_position().row as u32 + 1;
         if lines >= MIN_LINES {
             let mut tokens = Vec::new();
-            collect_tokens(node, source, &mut tokens);
+            collect_tokens(node, source, &mut tokens, 0);
             if tokens.len() >= MIN_TOKENS {
                 let mut hasher = DefaultHasher::new();
                 spec.id.hash(&mut hasher);
@@ -129,14 +135,14 @@ fn collect_functions(
     }
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        collect_functions(spec, child, source, path, groups);
+        collect_functions(spec, child, source, path, groups, depth + 1);
     }
 }
 
 /// Collect leaf-token text in order, skipping comment subtrees and whitespace — so reformatting
 /// and reworded comments don't hide an otherwise identical body.
-fn collect_tokens(node: Node, source: &str, out: &mut Vec<String>) {
-    if node.kind().contains("comment") {
+fn collect_tokens(node: Node, source: &str, out: &mut Vec<String>, depth: usize) {
+    if depth > MAX_DEPTH || node.kind().contains("comment") {
         return;
     }
     if node.child_count() == 0 {
@@ -150,7 +156,7 @@ fn collect_tokens(node: Node, source: &str, out: &mut Vec<String>) {
     }
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        collect_tokens(child, source, out);
+        collect_tokens(child, source, out, depth + 1);
     }
 }
 
