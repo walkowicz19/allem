@@ -9,7 +9,6 @@
 //! triage-first workflow is built for. Severity is `low`, so dead code never fails a default gate.
 
 use crate::specs;
-use crate::walk;
 use crate::LangSpec;
 use allem_core::{Category, Confidence, Finding, Location, Severity, SuggestedAction};
 use std::collections::HashMap;
@@ -32,22 +31,16 @@ struct Def {
     line: u32,
 }
 
-/// Analyze every recognized source file under `root` for cross-file dead code.
-pub fn analyze(root: &Path) -> Vec<Finding> {
-    let sources = walk::source_files(root)
-        .into_iter()
-        .filter_map(|p| std::fs::read_to_string(&p).ok().map(|s| (p, s)));
-    analyze_sources(sources)
-}
-
-/// Core logic over in-memory `(path, source)` pairs — filesystem-free, so it is unit-testable.
+/// Core logic over in-memory `(path, source)` pairs — `analyze_tree` reads the corpus once and
+/// hands it here; also filesystem-free for unit tests.
 pub fn analyze_sources(sources: impl IntoIterator<Item = (PathBuf, String)>) -> Vec<Finding> {
     let specs = specs::all();
     let mut counts: HashMap<String, u32> = HashMap::new();
     let mut defs: Vec<Def> = Vec::new();
 
     for (path, source) in sources {
-        let Some((spec, language)) = specs.iter().find(|(s, _)| matches_ext(s, &path)) else {
+        let Some((spec, language)) = specs.iter().find(|(s, _)| specs::matches_ext(s, &path))
+        else {
             continue;
         };
         let mut parser = Parser::new();
@@ -97,16 +90,6 @@ pub fn analyze_sources(sources: impl IntoIterator<Item = (PathBuf, String)>) -> 
             })
         })
         .collect()
-}
-
-fn matches_ext(spec: &LangSpec, path: &Path) -> bool {
-    match path.extension().and_then(|e| e.to_str()) {
-        Some(ext) => {
-            let ext = ext.to_ascii_lowercase();
-            spec.extensions.contains(&ext.as_str())
-        }
-        None => false,
-    }
 }
 
 /// Single recursive walk that both counts identifier occurrences and records definitions.

@@ -17,6 +17,10 @@ pub struct Config {
     pub languages: Vec<String>,
     /// Explicit ecosystem ids to restrict to; empty = autodetect all.
     pub ecosystems: Vec<String>,
+    /// Path fragments to exclude from analysis (e.g. "fixtures", "vendor", "test/data").
+    /// A file is skipped if any fragment appears in its slash-normalized path. Common
+    /// build/VCS dirs (target, .git, node_modules, …) are always skipped.
+    pub exclude: Vec<String>,
 }
 
 impl Default for Config {
@@ -26,7 +30,22 @@ impl Default for Config {
             offline: false,
             languages: Vec::new(),
             ecosystems: Vec::new(),
+            exclude: Vec::new(),
         }
+    }
+}
+
+impl Config {
+    /// Whether `path` (any form) is excluded by a configured fragment.
+    pub fn is_excluded(&self, path: &Path) -> bool {
+        if self.exclude.is_empty() {
+            return false;
+        }
+        let normalized = path.to_string_lossy().replace('\\', "/");
+        self.exclude.iter().any(|frag| {
+            let frag = frag.replace('\\', "/");
+            !frag.is_empty() && normalized.contains(&frag)
+        })
     }
 }
 

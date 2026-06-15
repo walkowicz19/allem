@@ -17,7 +17,7 @@ pub fn analyze_report(root: &Path, config: &Config) -> Result<Report> {
     let mut findings = allem_deps::analyze(root, config)?;
 
     // Polyglot code intelligence (complexity, long functions across languages).
-    let lang = allem_lang::analyze_tree(root)?;
+    let lang = allem_lang::analyze_tree(root, &config.exclude)?;
     findings.extend(lang.findings);
 
     // Re-apply stored triage verdicts (confirmed / false_positive / fixed).

@@ -85,6 +85,24 @@ Allem report for ./my-service
 Each finding carries a stable `id`, severity, evidence, and a suggested action. Nothing is
 changed until you explicitly `allem fix <id>` or dismiss it with `allem ignore <id>`.
 
+## Configuration
+
+Allem is zero-config. To override, add an optional **`.allemrc.json`** at the project root:
+
+```json
+{
+  "gate_severity": "high",
+  "offline": false,
+  "exclude": ["fixtures", "test/data", "vendor/sample"]
+}
+```
+
+- `gate_severity` — minimum severity that fails `allem audit` (default `high`).
+- `offline` — never hit the network (OSV / registries); use cached data only.
+- `exclude` — path fragments to skip (test fixtures, vendored samples, generated code). A file
+  is skipped if any fragment appears in its path. Common build/VCS dirs (`target`, `.git`,
+  `node_modules`, `dist`, `build`, `vendor`, …) are always skipped.
+
 ## MCP server
 
 `allem mcp` speaks newline-delimited **JSON-RPC 2.0** over stdio and exposes the same `Finding`

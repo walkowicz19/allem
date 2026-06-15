@@ -3,7 +3,19 @@
 //! bespoke adapter — see [`crate::cobol`].)
 
 use crate::LangSpec;
+use std::path::Path;
 use tree_sitter::Language;
+
+/// Whether `path`'s extension is handled by `spec`. Shared by the corpus passes (DRY).
+pub fn matches_ext(spec: &LangSpec, path: &Path) -> bool {
+    match path.extension().and_then(|e| e.to_str()) {
+        Some(ext) => {
+            let ext = ext.to_ascii_lowercase();
+            spec.extensions.contains(&ext.as_str())
+        }
+        None => false,
+    }
+}
 
 const PYTHON: LangSpec = LangSpec {
     id: "python",

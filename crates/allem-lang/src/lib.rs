@@ -105,29 +105,29 @@ pub struct LangReport {
 }
 
 /// Walk `root`, analyze every recognized source file, and collect findings + detected
-/// languages. Skips common vendor/build directories. I/O errors on a single file are
-/// skipped rather than aborting the whole run.
-pub fn analyze_tree(root: &Path) -> Result<LangReport> {
+/// languages. Skips common vendor/build directories and any configured `exclude` fragments.
+/// I/O errors on a single file are skipped rather than aborting the whole run.
+pub fn analyze_tree(root: &Path, exclude: &[String]) -> Result<LangReport> {
     let adapters = adapters();
     let mut findings = Vec::new();
     let mut languages: Vec<&'static str> = Vec::new();
 
-    for path in walk::source_files(root) {
-        let Some(adapter) = adapters.iter().find(|a| a.matches(&path)) else {
+    // Read the corpus once and share it with the per-file and cross-file passes.
+    let sources = walk::read_sources(root, exclude);
+
+    for (path, source) in &sources {
+        let Some(adapter) = adapters.iter().find(|a| a.matches(path)) else {
             continue;
         };
         if !languages.contains(&adapter.id()) {
             languages.push(adapter.id());
         }
-        let Ok(source) = std::fs::read_to_string(&path) else {
-            continue;
-        };
-        findings.extend(adapter.analyze_file(&path, &source)?);
+        findings.extend(adapter.analyze_file(path, source)?);
     }
 
-    // Cross-file dead code and duplication need the whole corpus, so they run as their own passes.
-    findings.extend(deadcode::analyze(root));
-    findings.extend(duplication::analyze(root));
+    // Cross-file dead code and duplication need the whole corpus.
+    findings.extend(deadcode::analyze_sources(sources.clone()));
+    findings.extend(duplication::analyze_sources(sources));
 
     Ok(LangReport {
         languages,

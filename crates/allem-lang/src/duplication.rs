@@ -7,7 +7,6 @@
 //! functions are skipped via size thresholds. Findings are `low`-severity candidates for triage.
 
 use crate::specs;
-use crate::walk;
 use crate::LangSpec;
 use allem_core::{Category, Confidence, Finding, Location, Severity, SuggestedAction};
 use std::collections::hash_map::DefaultHasher;
@@ -29,22 +28,16 @@ struct Clone {
     lang: &'static str,
 }
 
-/// Analyze every recognized source file under `root` for duplicated functions.
-pub fn analyze(root: &Path) -> Vec<Finding> {
-    let sources = walk::source_files(root)
-        .into_iter()
-        .filter_map(|p| std::fs::read_to_string(&p).ok().map(|s| (p, s)));
-    analyze_sources(sources)
-}
-
-/// Core logic over in-memory `(path, source)` pairs — filesystem-free, so it is unit-testable.
+/// Core logic over in-memory `(path, source)` pairs — `analyze_tree` reads the corpus once and
+/// hands it here; also filesystem-free for unit tests.
 pub fn analyze_sources(sources: impl IntoIterator<Item = (PathBuf, String)>) -> Vec<Finding> {
     let specs = specs::all();
     // hash(token-sequence) → all functions sharing it.
     let mut groups: HashMap<u64, Vec<Clone>> = HashMap::new();
 
     for (path, source) in sources {
-        let Some((spec, language)) = specs.iter().find(|(s, _)| matches_ext(s, &path)) else {
+        let Some((spec, language)) = specs.iter().find(|(s, _)| specs::matches_ext(s, &path))
+        else {
             continue;
         };
         let mut parser = Parser::new();
@@ -93,16 +86,6 @@ pub fn analyze_sources(sources: impl IntoIterator<Item = (PathBuf, String)>) -> 
     // Stable output order for deterministic reports.
     findings.sort_by(|a, b| a.id.cmp(&b.id));
     findings
-}
-
-fn matches_ext(spec: &LangSpec, path: &Path) -> bool {
-    match path.extension().and_then(|e| e.to_str()) {
-        Some(ext) => {
-            let ext = ext.to_ascii_lowercase();
-            spec.extensions.contains(&ext.as_str())
-        }
-        None => false,
-    }
 }
 
 fn collect_functions(
